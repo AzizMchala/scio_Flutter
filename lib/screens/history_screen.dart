@@ -7,59 +7,107 @@ class HistoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'Historique',
-        automaticallyImplyLeading: false,
-      ),
-      body: Center(
+    return MainLayout(
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               decoration: BoxDecoration(
-                color: isDark 
-                    ? AppColors.surfaceDark.withValues(alpha: 0.3)
-                    : AppColors.surface,
+                  color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: AppColors.primary.withValues(alpha: 0.2),
                   width: 1,
                 ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
               ),
               child: Column(
                 children: [
-                  Icon(
-                    Icons.history_rounded,
-                    size: 64,
-                    color: AppColors.primary,
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: AppColors.historyBlue.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.history,
+                        size: 48,
+                        color: AppColors.historyBlue,
+                      ),
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    'Historique Screen - À implémenter',
+                    const Text(
+                      'Historique des Scans',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : AppColors.darkGray,
+                        color: AppColors.darkGray,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    'Historique des scans précédents',
+                    const Text(
+                      'Retrouvez tous vos scans précédents\net leurs analyses détaillées',
                     style: TextStyle(
                       fontSize: 16,
-                      color: isDark ? AppColors.lightGray : AppColors.gray,
+                        color: AppColors.gray,
                     ),
                     textAlign: TextAlign.center,
                   ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () {
+                        // TODO: Implémenter l'historique
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Historique à implémenter'),
+                            backgroundColor: AppColors.historyBlue,
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.historyBlue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.history, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Voir l\'historique',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
           ],
+          ),
         ),
       ),
     );

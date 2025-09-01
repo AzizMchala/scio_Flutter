@@ -39,7 +39,7 @@ class ScioApp extends StatelessWidget {
           type: BottomNavigationBarType.fixed,
           elevation: 8,
         ),
-        scaffoldBackgroundColor: Colors.white,
+        scaffoldBackgroundColor: AppColors.background,
       ),
       darkTheme: ThemeData(
         useMaterial3: true,

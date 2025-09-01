@@ -25,4 +25,29 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
+
+  // Couleurs pour les cartes d'actions rapides
+  static const Color scannerGreen = Color(0xFF10B981);
+  static const Color historyBlue = Color(0xFF3B82F6);
+  static const Color searchOrange = Color(0xFFF59E0B);
+  static const Color favoritePurple = Color(0xFF8B5CF6);
+
+  // Couleurs pour les scores
+  static const Color scoreA = Color(0xFF10B981); // Vert
+  static const Color scoreB = Color(0xFF3B82F6); // Bleu
+  static const Color scoreC = Color(0xFFF59E0B); // Orange
+  static const Color scoreD = Color(0xFFEF4444); // Rouge
+
+  // Arrière-plan principal
+  static const Color background = Color(0xFFF8F9FA);
+
+  // Noir pur pour les éléments sombres
+  static const Color pureBlack = Color(0xFF000000);
+
+  // Gradient noir pour l'en-tête
+  static const LinearGradient blackGradient = LinearGradient(
+    colors: [Color(0xFF000000), Color(0xFF1F1F1F)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
 } 

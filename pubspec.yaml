@@ -41,6 +41,12 @@ dependencies:
   # Animations fluides pour l'onboarding
   smooth_page_indicator: ^1.1.0
 
+  # Scanner de codes-barres
+  mobile_scanner: ^5.0.0
+  
+  # Permissions pour caméra
+  permission_handler: ^11.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -51,6 +57,29 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  
+  # Package pour générer les icônes d'application
+  flutter_launcher_icons: ^0.13.1
+
+# Configuration pour flutter_launcher_icons
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/SCIO.png"
+  min_sdk_android: 21 # android min sdk min:16, default 21
+  remove_alpha_ios: true # Supprime le canal alpha pour iOS (requis pour l'App Store)
+  web:
+    generate: true
+    image_path: "assets/images/SCIO.png"
+    background_color: "#F8F9FA"
+    theme_color: "#6366F1"
+  windows:
+    generate: true
+    image_path: "assets/images/SCIO.png"
+    icon_size: 48 # min:48, max:256, default: 48
+  macos:
+    generate: true
+    image_path: "assets/images/SCIO.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -64,9 +93,9 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/images/
+    - assets/icons/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -4,7 +4,7 @@ import 'scanner_screen.dart';
 import 'history_screen.dart';
 import 'favorites_screen.dart';
 import 'search_screen.dart';
-import '../widgets/debug_panel.dart';
+import '../controllers/navigation_controller.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -14,7 +14,6 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
-  int _currentIndex = 0;
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
 
@@ -56,20 +55,28 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       parent: _animationController,
       curve: Curves.easeInOut,
     ));
+
+    // Écouter les changements du contrôleur de navigation
+    navigationController.addListener(_onNavigationChanged);
   }
 
   @override
   void dispose() {
+    navigationController.removeListener(_onNavigationChanged);
     _animationController.dispose();
     super.dispose();
   }
 
+  void _onNavigationChanged() {
+    if (navigationController.currentIndex != navigationController.currentIndex) {
+      _onItemTapped(navigationController.currentIndex);
+    }
+  }
+
   void _onItemTapped(int index) {
-    if (index != _currentIndex) {
+    if (index != navigationController.currentIndex) {
       _animationController.forward().then((_) {
-        setState(() {
-          _currentIndex = index;
-        });
+        navigationController.navigateToTab(index);
         _animationController.reverse();
       });
     }
@@ -77,6 +84,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: navigationController,
+      builder: (context, child) {
     return Scaffold(
       body: Stack(
         children: [
@@ -85,12 +95,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             builder: (context, child) {
               return Transform.scale(
                 scale: _scaleAnimation.value,
-                child: _screens[_currentIndex],
+                    child: _screens[navigationController.currentIndex],
               );
             },
           ),
-          // Panneau de debug (à supprimer en production)
-          const DebugPanel(),
         ],
       ),
       bottomNavigationBar: Container(
@@ -114,7 +122,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(_navIcons.length, (index) {
-              final isSelected = _currentIndex == index;
+              final isSelected = navigationController.currentIndex == index;
               return Expanded(
                 child: GestureDetector(
                   onTap: () => _onItemTapped(index),
@@ -186,6 +194,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           ),
         ),
       ),
+        );
+      },
     );
   }
 } 
