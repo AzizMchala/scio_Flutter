@@ -125,3 +125,6 @@ coverage/
 **/*.g.dart
 **/*.freezed.dart
 **/*.gr.dart
+
+# Build scripts output
+builds/

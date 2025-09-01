@@ -1,8 +1,12 @@
 name: scio_flutter
-description: "A new Flutter project."
+description: "Application Flutter moderne et professionnelle avec navigation par onglets, scanner QR, et interface utilisateur élégante. Optimisée pour iOS et Android."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+homepage: https://github.com/AzizMchala/scio_Flutter
+repository: https://github.com/AzizMchala/scio_Flutter
+issue_tracker: https://github.com/AzizMchala/scio_Flutter/issues
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
