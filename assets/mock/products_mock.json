@@ -1,0 +1,109 @@
+{
+  "alimentaires": [
+    {
+      "code_barres": "1234567890123",
+      "nom": "Biscuits Céréales",
+      "categorie": "alimentaire",
+      "score_final": "Moyen",
+      "analyse_nutritionnelle": {
+        "calories": 250,
+        "matieres_grasses": 3.0,
+        "sel": 200,
+        "sucre": 15,
+        "proteines": 6,
+        "fibres": 4
+      },
+      "additifs": [
+        {
+          "nom": "E322 Lécithine",
+          "risque": "Sans risque"
+        },
+        {
+          "nom": "E202 Sorbate",
+          "risque": "Risque modéré"
+        }
+      ],
+      "degre_transformation": "Transformé"
+    }
+  ],
+  "cosmetiques": {
+    "verifie": [
+      {
+        "code_barres": "2234567890123",
+        "nom": "Crème Hydratante Bio",
+        "categorie": "cosmetique",
+        "verifie": true,
+        "score_final": 90,
+        "composition": 40,
+        "impact_env": 7,
+        "tests_conformite": 30,
+        "emballage": 5
+      }
+    ],
+    "non_verifie": [
+      {
+        "code_barres": "2234567890456",
+        "nom": "Shampoing Classique",
+        "categorie": "cosmetique",
+        "verifie": false,
+        "score_final": "Bon",
+        "composition": 50,
+        "impact_env": 4,
+        "emballage": 0
+      }
+    ]
+  },
+  "complements_alimentaires": {
+    "verifie": [
+      {
+        "code_barres": "3234567890123",
+        "nom": "Vitamine C 1000mg",
+        "categorie": "complement_alimentaire",
+        "verifie": true,
+        "score_final": 85,
+        "composition": 55,
+        "tracabilite": 25,
+        "mode_emploi": 8,
+        "emballage": 10
+      }
+    ],
+    "non_verifie": [
+      {
+        "code_barres": "3234567890456",
+        "nom": "Complément Omega-3",
+        "categorie": "complement_alimentaire",
+        "verifie": false,
+        "score_final": 60,
+        "composition": 35,
+        "tracabilite": 15,
+        "mode_emploi": 5,
+        "emballage": 0
+      }
+    ]
+  },
+  "entretien_menager": {
+    "verifie": [
+      {
+        "code_barres": "4234567890123",
+        "nom": "Nettoyant Sols Écologique",
+        "categorie": "entretien_menager",
+        "verifie": true,
+        "score_final": 70,
+        "composition": 30,
+        "tests_conformite": 20,
+        "impact_env": 8
+      }
+    ],
+    "non_verifie": [
+      {
+        "code_barres": "4234567890456",
+        "nom": "Dégraissant Puissant",
+        "categorie": "entretien_menager",
+        "verifie": false,
+        "score_final": "Médiocre",
+        "composition": 18,
+        "impact_env": 15
+      }
+    ]
+  }
+} 
