@@ -3,35 +3,42 @@ import '../widgets/custom_app_bar.dart';
 import '../widgets/action_card.dart';
 import '../widgets/recent_product_card.dart';
 import '../models/product.dart';
+import '../models/history_entry.dart';
+import '../models/scanned_product.dart';
+import '../services/history_service.dart';
 import '../utils/colors.dart';
 import '../controllers/navigation_controller.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
-  // Données d'exemple pour les produits récents
-  List<Product> _getRecentProducts() {
-    return [
-      Product(
-        id: '1',
-        name: 'Nutella Original',
-        scanDate: DateTime.now().subtract(const Duration(days: 0)),
-        score: ProductScore.D,
-        isNew: true,
-      ),
-      Product(
-        id: '2',
-        name: 'Yaourt Bio Nature',
-        scanDate: DateTime.now().subtract(const Duration(days: 1)),
-        score: ProductScore.A,
-      ),
-      Product(
-        id: '3',
-        name: 'Huile d\'Olive Extra',
-        scanDate: DateTime.now().subtract(const Duration(days: 2)),
-        score: ProductScore.A,
-      ),
-    ];
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  List<HistoryEntry> _recentScans = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecentScans();
+  }
+
+  Future<void> _loadRecentScans() async {
+    try {
+      final allScans = await HistoryService.getAll();
+      // Trier par date et prendre les 3 plus récents
+      allScans.sort((a, b) => b.scannedAt.compareTo(a.scannedAt));
+      setState(() {
+        _recentScans = allScans.take(3).toList();
+      });
+    } catch (e) {
+      // En cas d'erreur, garder la liste vide
+      setState(() {
+        _recentScans = [];
+      });
+    }
   }
 
   void _navigateToScanner(BuildContext context) {
@@ -51,23 +58,18 @@ class HomeScreen extends StatelessWidget {
   }
 
   void _viewAllScans(BuildContext context) {
-    // TODO: Navigation vers tous les scans
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Voir tous les scans')),
-    );
+    navigationController.navigateToHistory();
   }
 
-  void _onProductTap(BuildContext context, Product product) {
-    // TODO: Navigation vers les détails du produit
+  void _onProductTap(BuildContext context, HistoryEntry entry) {
+    // Navigue vers la page des détails du produit (pas encore implémentée)
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Détails de ${product.name}')),
+      SnackBar(content: Text('Détails de ${entry.name}')),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final recentProducts = _getRecentProducts();
-    
     return MainLayout(
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -198,7 +200,7 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 16),
 
             // Liste des produits récents
-            if (recentProducts.isEmpty)
+            if (_recentScans.isEmpty)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(32),
@@ -239,12 +241,12 @@ class HomeScreen extends StatelessWidget {
               )
             else
               Column(
-                children: recentProducts
-                    .map((product) => Padding(
+                children: _recentScans
+                    .map((entry) => Padding(
                           padding: const EdgeInsets.only(bottom: 12),
-                          child: RecentProductCard(
-                            product: product,
-                            onTap: () => _onProductTap(context, product),
+                          child: _RecentScanCard(
+                            entry: entry,
+                            onTap: () => _onProductTap(context, entry),
                           ),
                         ))
                     .toList(),
@@ -252,6 +254,200 @@ class HomeScreen extends StatelessWidget {
 
             // Espacement en bas pour éviter que le contenu soit collé
             const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RecentScanCard extends StatelessWidget {
+  final HistoryEntry entry;
+  final VoidCallback onTap;
+
+  const _RecentScanCard({required this.entry, required this.onTap});
+
+  Color _getCategoryColor(ScioCategory category) {
+    switch (category) {
+      case ScioCategory.alimentaire:
+        return const Color(0xFF4CAF50);
+      case ScioCategory.cosmetique:
+        return const Color(0xFFE91E63);
+      case ScioCategory.complementAlimentaire:
+        return const Color(0xFF2196F3);
+      case ScioCategory.entretienMenager:
+        return const Color(0xFFFF9800);
+    }
+  }
+
+  String _getCategoryName(ScioCategory category) {
+    switch (category) {
+      case ScioCategory.alimentaire:
+        return 'Alimentaire';
+      case ScioCategory.cosmetique:
+        return 'Cosmétique';
+      case ScioCategory.complementAlimentaire:
+        return 'Complément';
+      case ScioCategory.entretienMenager:
+        return 'Entretien';
+    }
+  }
+
+  Color _getScoreColor() {
+    if (entry.scoreNumeric != null) {
+      final score = entry.scoreNumeric!;
+      if (score >= 85) return AppColors.success;
+      if (score >= 65) return AppColors.historyBlue;
+      if (score >= 40) return AppColors.searchOrange;
+      return AppColors.error;
+    }
+    
+    final label = (entry.scoreLabel ?? '').toLowerCase();
+    if (label.contains('excellent') || label.contains('très bon')) return AppColors.success;
+    if (label.contains('bon')) return AppColors.historyBlue;
+    if (label.contains('moyen') || label.contains('médiocre')) return AppColors.searchOrange;
+    if (label.contains('dangereux') || label.contains('risqué') || label.contains('mauvais')) return AppColors.error;
+    return AppColors.lightGray;
+  }
+
+  String _getScoreText() {
+    if (entry.scoreNumeric != null) {
+      return '${entry.scoreNumeric}';
+    }
+    return entry.scoreLabel ?? '-';
+  }
+
+  String _getTimeAgo() {
+    final now = DateTime.now();
+    final difference = now.difference(entry.scannedAt);
+    
+    if (difference.inDays > 0) {
+      return 'Il y a ${difference.inDays} jour${difference.inDays > 1 ? 's' : ''}';
+    } else if (difference.inHours > 0) {
+      return 'Il y a ${difference.inHours}h';
+    } else if (difference.inMinutes > 0) {
+      return 'Il y a ${difference.inMinutes}min';
+    } else {
+      return 'À l\'instant';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final categoryColor = _getCategoryColor(entry.category);
+    final categoryName = _getCategoryName(entry.category);
+    final scoreColor = _getScoreColor();
+    final scoreText = _getScoreText();
+    final timeAgo = _getTimeAgo();
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.lightGray.withValues(alpha: 0.3)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Image du produit
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: categoryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: Image.asset(
+                  'assets/images/SCIO.png',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.shopping_bag,
+                      color: categoryColor,
+                      size: 24,
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            
+            // Informations du produit
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    entry.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.darkGray,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: categoryColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: categoryColor.withValues(alpha: 0.3)),
+                        ),
+                        child: Text(
+                          categoryName,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: categoryColor,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        timeAgo,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.gray,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            
+            // Score
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: scoreColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: scoreColor.withValues(alpha: 0.3)),
+              ),
+              child: Text(
+                scoreText,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: scoreColor,
+                ),
+              ),
+            ),
           ],
         ),
       ),

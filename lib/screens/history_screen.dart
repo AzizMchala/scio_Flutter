@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../widgets/custom_app_bar.dart';
 import '../utils/colors.dart';
 import '../services/history_service.dart';
+import '../services/favorites_service.dart';
 import '../models/history_entry.dart';
+import '../models/favorite_entry.dart';
 import '../models/scanned_product.dart';
 import '../widgets/score_widgets.dart';
 import '../controllers/navigation_controller.dart';
@@ -141,101 +143,103 @@ class _HistoryScreenState extends State<HistoryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Historique des scans',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.darkGray),
+                  // Header
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Historique des scans',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.darkGray),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.lightGray.withValues(alpha: 0.4)),
+                        ),
+                        child: Text('${items.length} produit(s)', style: const TextStyle(color: AppColors.gray, fontWeight: FontWeight.w600)),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: items.isEmpty ? null : _confirmClear,
+                        child: const Text('Effacer l\'historique', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
+                      ),
+                    ],
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.lightGray.withValues(alpha: 0.4)),
-                  ),
-                  child: Text('${items.length} produit(s)', style: const TextStyle(color: AppColors.gray, fontWeight: FontWeight.w600)),
-                ),
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: items.isEmpty ? null : _confirmClear,
-                  child: const Text('Effacer l\'historique', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
-                ),
-              ],
-            ),
 
-            const SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
-            // Filters
-            Row(
-              children: [
-                Expanded(
-                  child: _Dropdown(
-                    label: 'Type',
-                    value: _typeFilter,
-                    items: const ['Tous', 'Vérifié', 'Non vérifié'],
-                    onChanged: (v) => setState(() => _typeFilter = v ?? 'Tous'),
+                  // Filters
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _Dropdown(
+                          label: 'Type',
+                          value: _typeFilter,
+                          items: const ['Tous', 'Vérifié', 'Non vérifié'],
+                          onChanged: (v) => setState(() => _typeFilter = v ?? 'Tous'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _Dropdown(
+                          label: 'Tri',
+                          value: _sort,
+                          items: const ['Plus récent', 'Plus ancien', 'Score croissant', 'Score décroissant'],
+                          onChanged: (v) => setState(() => _sort = v ?? 'Plus récent'),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _Dropdown(
-                    label: 'Tri',
-                    value: _sort,
-                    items: const ['Plus récent', 'Plus ancien', 'Score croissant', 'Score décroissant'],
-                    onChanged: (v) => setState(() => _sort = v ?? 'Plus récent'),
-                  ),
-                ),
-              ],
-            ),
+
+                  const SizedBox(height: 16),
 
             const SizedBox(height: 16),
 
             if (items.isEmpty)
-              _EmptyState(onScan: () => navigationController.navigateToScanner())
+              Center(
+                child: _EmptyState(onScan: () => navigationController.navigateToScanner()),
+              )
             else
-              Expanded(
-                child: ListView.separated(
-                  itemCount: items.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final e = items[index];
-                    final color = _scoreColor(e);
-                    final isLast = index == items.length - 1;
+              ...items.asMap().entries.map((entry) {
+                final index = entry.key;
+                final e = entry.value;
+                final color = _scoreColor(e);
+                final isLast = index == items.length - 1;
 
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Timeline column
-                        Column(
-                          children: [
-                            // Dot
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Timeline column
+                      Column(
+                        children: [
+                          // Dot
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                          ),
+                          // Line
+                          if (!isLast)
                             Container(
-                              width: 12,
-                              height: 12,
-                              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                              width: 2,
+                              height: 64,
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              color: color.withValues(alpha: 0.3),
                             ),
-                            // Line
-                            if (!isLast)
-                              Container(
-                                width: 2,
-                                height: 64,
-                                margin: const EdgeInsets.symmetric(vertical: 4),
-                                color: color.withValues(alpha: 0.3),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(width: 12),
-                        // Card
-                        Expanded(child: _HistoryCard(entry: e, accent: color)),
-                      ],
-                    );
-                  },
-                ),
-              ),
+                        ],
+                      ),
+                      const SizedBox(width: 12),
+                      // Card
+                      Expanded(child: _HistoryCard(entry: e, accent: color)),
+                    ],
+                  ),
+                );
+              }).toList(),
           ],
         ),
       ),
@@ -280,16 +284,81 @@ class _Dropdown extends StatelessWidget {
   }
 }
 
-class _HistoryCard extends StatelessWidget {
+class _HistoryCard extends StatefulWidget {
   final HistoryEntry entry;
   final Color accent;
 
   const _HistoryCard({required this.entry, required this.accent});
 
   @override
+  State<_HistoryCard> createState() => _HistoryCardState();
+}
+
+class _HistoryCardState extends State<_HistoryCard> {
+  bool _isFavorite = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavoriteStatus();
+  }
+
+  Future<void> _loadFavoriteStatus() async {
+    final isFavorite = await FavoritesService.isFavorite(widget.entry.barcode);
+    if (mounted) {
+      setState(() {
+        _isFavorite = isFavorite;
+      });
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    try {
+      if (_isFavorite) {
+        await FavoritesService.removeByBarcode(widget.entry.barcode);
+      } else {
+        final favoriteEntry = FavoriteEntry(
+          barcode: widget.entry.barcode,
+          name: widget.entry.name,
+          brand: widget.entry.brand,
+          category: widget.entry.category,
+          verified: widget.entry.verified,
+          scoreNumeric: widget.entry.scoreNumeric,
+          scoreLabel: widget.entry.scoreLabel,
+        );
+        await FavoritesService.add(favoriteEntry);
+      }
+      
+      setState(() {
+        _isFavorite = !_isFavorite;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_isFavorite ? 'Ajouté aux favoris' : 'Retiré des favoris'),
+            backgroundColor: widget.accent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur lors de la modification des favoris'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final dateStr = _formatDate(entry.scannedAt);
-    final timeStr = _formatTime(entry.scannedAt);
+    final dateStr = _formatDate(widget.entry.scannedAt);
+    final timeStr = _formatTime(widget.entry.scannedAt);
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -308,7 +377,7 @@ class _HistoryCard extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.1),
+              color: widget.accent.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             clipBehavior: Clip.antiAlias,
@@ -324,7 +393,7 @@ class _HistoryCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        entry.name,
+                        widget.entry.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.darkGray),
@@ -339,15 +408,15 @@ class _HistoryCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        '${entry.brand} • ${_cat(entry.category)}',
+                        '${widget.entry.brand} • ${_cat(widget.entry.category)}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 13, color: AppColors.gray),
                       ),
                     ),
                     const SizedBox(width: 8),
-                    if (entry.verified != null)
-                      (entry.verified! ? const VerifiedBadge() : const NonVerifiedBadge()),
+                    if (widget.entry.verified != null)
+                      (widget.entry.verified! ? const VerifiedBadge() : const NonVerifiedBadge()),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -356,13 +425,30 @@ class _HistoryCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: accent.withValues(alpha: 0.12),
+                        color: widget.accent.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: accent.withValues(alpha: 0.5)),
+                        border: Border.all(color: widget.accent.withValues(alpha: 0.5)),
                       ),
                       child: Text(
-                        _scoreText(entry),
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: accent),
+                        _scoreText(widget.entry),
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: widget.accent),
+                      ),
+                    ),
+                    const Spacer(),
+                    // Bouton cœur
+                    GestureDetector(
+                      onTap: _toggleFavorite,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: widget.accent.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Icon(
+                          _isFavorite ? Icons.favorite : Icons.favorite_border,
+                          color: _isFavorite ? Colors.red : widget.accent,
+                          size: 18,
+                        ),
                       ),
                     ),
                   ],

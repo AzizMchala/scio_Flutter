@@ -143,25 +143,25 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             if (items.isEmpty)
               _EmptyFavorites(onScan: () => navigationController.navigateToScanner())
             else
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 0.75,
-                  ),
-                  itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    final e = items[index];
-                    final accent = _scoreColor(e);
-                    return _FavoriteCard(
-                      entry: e,
-                      accent: accent,
-                      onRemove: () => _confirmRemove(e.barcode),
-                    );
-                  },
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 0.75,
                 ),
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  final e = items[index];
+                  final accent = _scoreColor(e);
+                  return _FavoriteCard(
+                    entry: e,
+                    accent: accent,
+                    onRemove: () => _confirmRemove(e.barcode),
+                  );
+                },
               ),
           ],
         ),

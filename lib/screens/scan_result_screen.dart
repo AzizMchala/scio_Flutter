@@ -5,6 +5,10 @@ import '../utils/colors.dart';
 import '../widgets/custom_app_bar.dart';
 import '../models/scanned_product.dart';
 import '../services/product_repository.dart';
+import '../services/history_service.dart';
+import '../services/favorites_service.dart';
+import '../models/history_entry.dart';
+import '../models/favorite_entry.dart';
 import '../widgets/score_widgets.dart';
 
 class ScanResultScreen extends StatefulWidget {
@@ -23,6 +27,8 @@ class ScanResultScreen extends StatefulWidget {
 
 class _ScanResultScreenState extends State<ScanResultScreen> {
   Future<ScannedProductBase?>? _future;
+  bool _hasAddedToHistory = false;
+  bool _isFavorite = false;
 
   @override
   void initState() {
@@ -31,6 +37,96 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
       barcode: widget.barcode,
       category: _mapCategory(widget.category.type),
     );
+    _loadFavoriteStatus();
+  }
+
+  // Charger le statut de favori
+  Future<void> _loadFavoriteStatus() async {
+    final isFavorite = await FavoritesService.isFavorite(widget.barcode);
+    if (mounted) {
+      setState(() {
+        _isFavorite = isFavorite;
+      });
+    }
+  }
+
+  // Toggle le statut de favori
+  Future<void> _toggleFavorite(ScannedProductBase product) async {
+    try {
+      if (_isFavorite) {
+        await FavoritesService.removeByBarcode(widget.barcode);
+      } else {
+        final favoriteEntry = FavoriteEntry(
+          barcode: widget.barcode,
+          name: product.name,
+          brand: 'Marque inconnue', // ou récupérer la vraie marque si disponible
+          category: _mapCategory(widget.category.type),
+          verified: _isVerified(product),
+          scoreNumeric: _getNumericScore(product),
+          scoreLabel: _getScoreLabel(product),
+        );
+        await FavoritesService.add(favoriteEntry);
+      }
+      
+      setState(() {
+        _isFavorite = !_isFavorite;
+      });
+
+      // Afficher un message de confirmation
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_isFavorite ? 'Ajouté aux favoris' : 'Retiré des favoris'),
+            backgroundColor: widget.category.color,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      // Gérer l'erreur
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur lors de la modification des favoris'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  // Méthode pour ajouter automatiquement à l'historique
+  void _addToHistory(ScannedProductBase product) {
+    final entry = HistoryEntry(
+      barcode: widget.barcode,
+      name: product.name,
+      brand: 'Marque inconnue', // ScannedProductBase n'a pas de propriété brand
+      category: _mapCategory(widget.category.type),
+      verified: _isVerified(product),
+      scoreNumeric: _getNumericScore(product),
+      scoreLabel: _getScoreLabel(product),
+      scannedAt: DateTime.now(),
+    );
+    
+    // Ajout asynchrone à l'historique
+    HistoryService.add(entry);
+  }
+
+  // Helper pour récupérer le score numérique
+  int? _getNumericScore(ScannedProductBase product) {
+    if (product is CosmeticProductVerified) return product.finalScore;
+    if (product is SupplementProduct) return product.finalScore;
+    if (product is HouseholdProductVerified) return product.finalScore;
+    return null;
+  }
+
+  // Helper pour récupérer le score label
+  String? _getScoreLabel(ScannedProductBase product) {
+    if (product is FoodProduct) return product.finalScore;
+    if (product is CosmeticProductUnverified) return product.finalScore;
+    if (product is HouseholdProductUnverified) return product.finalScore;
+    return null;
   }
 
   ScioCategory _mapCategory(ProductCategoryType type) {
@@ -66,7 +162,12 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
           future: _future,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(50.0),
+                  child: CircularProgressIndicator(),
+                ),
+              );
             }
             if (!snapshot.hasData || snapshot.data == null) {
               return _buildNotFound(context);
@@ -192,6 +293,24 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                 children: [
                   if (isVerified != null)
                     isVerified ? const VerifiedBadge() : const NonVerifiedBadge(),
+                  if (product != null) ...[
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () => _toggleFavorite(product),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Icon(
+                          _isFavorite ? Icons.favorite : Icons.favorite_border,
+                          color: _isFavorite ? Colors.red : Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 8),
@@ -254,6 +373,12 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
   }
 
   Widget _buildContent(BuildContext context, ScannedProductBase product) {
+    // Ajouter automatiquement à l'historique quand un produit est trouvé (une seule fois)
+    if (!_hasAddedToHistory) {
+      _addToHistory(product);
+      _hasAddedToHistory = true;
+    }
+    
     final List<Widget> sections = [];
 
     if (product is FoodProduct) {
@@ -283,29 +408,34 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
         const SizedBox(height: 32),
         Row(
               children: [
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                backgroundColor: widget.category.color,
-                    foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                  Icon(Icons.qr_code_scanner, size: 18),
-                      SizedBox(width: 8),
-                  Text('Scanner un autre produit', style: TextStyle(fontWeight: FontWeight.w600)),
-                    ],
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                  backgroundColor: widget.category.color,
+                      foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                    Icon(Icons.qr_code_scanner, size: 18),
+                        SizedBox(width: 8),
+                    Text('Scanner', style: TextStyle(fontWeight: FontWeight.w600)),
+                      ],
+                    ),
                   ),
                 ),
-            const SizedBox(width: 12),
-                TextButton(
-              onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
-                  child: const Text(
-                    'Retour à l\'accueil',
-                style: TextStyle(color: AppColors.gray, fontWeight: FontWeight.w500),
+              const SizedBox(width: 12),
+                  Expanded(
+                    child: TextButton(
+                onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
+                    child: const Text(
+                      'Accueil',
+                  style: TextStyle(color: AppColors.gray, fontWeight: FontWeight.w500),
+                    ),
                   ),
                 ),
               ],
